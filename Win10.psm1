@@ -8,225 +8,6 @@
 ##########
 
 ##########
-#region BlackDragonBE Tweaks
-##########
-
-Function DisableExtraServices {
-	Write-Host "Disabling extra services (BlackDragonBE)..."
-
-    $services = @(
-        "diagnosticshub.standardcollector.service"	# Microsoft (R) Diagnostics Hub Standard Collector Service
-        "MapsBroker"								# Downloaded Maps Manager
-        "NetTcpPortSharing"                     	# Net.Tcp Port Sharing Service
-        "TrkWks"                                   	# Distributed Link Tracking Client
-        "WbioSrvc"                               	# Windows Biometric Service
-		"WMPNetworkSvc" 							# Windows Media Player Network Sharing Service
-        "AppVClient"
-        "RemoteRegistry"
-        "CDPSvc"
-        "shpamsvc"
-        "SCardSvr"
-        "UevAgentService"
-        "PeerDistSvc"
-        "lfsvc"
-        "HvHost"
-        "vmickvpexchange"
-        "vmicguestinterface"
-        "vmicshutdown"
-        "vmicheartbeat"
-        "vmicvmsession"
-        "vmicrdv"
-        "vmictimesync"
-        "vmicvss"
-        "irmon"
-        "SharedAccess"
-        "SmsRouter"
-        "CscService"
-        "SEMgrSvc"
-        "PhoneSvc"
-        "RpcLocator"
-        "RetailDemo"
-        "SensorDataService"
-        "SensrSvc"
-        "SensorService"
-        "ScDeviceEnum"
-        "SCPolicySvc"
-        "SNMPTRAP"
-        "WFDSConSvc"
-        "FrameServer"
-        "wisvc"
-        "icssvc"
-        "WwanSvc"
-    )
-
-    foreach ($service in $services) {
-        if (Get-Service $service -ErrorAction SilentlyContinue)
-        {
-            Write-Host "Stopping and disabling $service"
-            Stop-Service -Name $service
-            Get-Service -Name $service | Set-Service -StartupType Disabled
-        } else {
-            Write-Host "Skipping $service (does not exist)"
-        }
-    }
-}
-
-# Download ninite and install the selected apps
-Function DoNiniteInstall {
-    Write-Host "Downloading Ninite ..."
-    
-    $niniteapps = @()
-    $ofs = '-'
-    
-    Get-Content .\NiniteApps.txt -ErrorAction Stop | ForEach-Object {
-        if(-not $_.ToString().StartsWith('#'))
-        {
-            #Write-Output $_
-            $niniteapps += $_
-        }
-    }
-
-    $niniteurl = "https://ninite.com/" + $niniteapps + "/ninite.exe"
-    $output = "C:\Ninite.exe"
-    
-    Invoke-WebRequest $niniteurl -OutFile $output
-    & $output
-
-    Write-Host
-    Read-Host "Press ENTER when all applications have been installed by Ninite"
-}
-
-# Delete Temp Files
-Function DeleteTempFiles {
-    Write-Host "Cleaning up temporary files..."
-    $tempfolders = @("C:\Windows\Temp\*", "C:\Windows\Prefetch\*", "C:\Documents and Settings\*\Local Settings\temp\*", "C:\Users\*\Appdata\Local\Temp\*")
-    Remove-Item $tempfolders -force -recurse 2>&1 | Out-Null
-}
-
-# Clean WinSXS folder (WARNING: this takes a while!)
-Function CleanWinSXS {
-    Write-Host "Cleaning WinSXS folder, this may take a while, please wait..."
-    Dism.exe /online /Cleanup-Image /StartComponentCleanup
-}
-
-# Download O&O Shutup10
-Function DownloadShutup10 {
-    Write-Host "Downloading Shutup10 & putting it on C drive..."
-    $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
-    $output = "C:\Shutup10.exe"
-    Invoke-WebRequest $url -OutFile $output 
-}
-
-# Remove startup delay (use with SSD)
-Function DisableStartupDelay {
-    Write-Host "Removing startup delay..."
-    New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer' -Name Serialize -Force | Out-Null
-    New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize' -Name StartupDelayInMSec  -PropertyType DWORD -Value 0 -Force | Out-Null
-}
-
-# Stop and disable Windows Search Service
-Function DisableWindowsSearch {
-	Write-Host "Stopping and disabling Windows Search Service..."
-	Stop-Service "WSearch" -WarningAction SilentlyContinue
-	Set-Service "WSearch" -StartupType Disabled
-}
-
-# Enable and start Windows Search Service
-Function EnableWindowsSearch {
-	Write-Host "Enabling and starting Windows Search Service..."
-	Set-Service "WSearch" -StartupType Automatic
-	Start-Service "WSearch" -WarningAction SilentlyContinue
-}
-
-# Stop and disable Microsoft Compatibility Appraiser
-Function DisableCompatibilityAppraiser {
-	Write-Host "Stopping and disabling Microsoft Compatibility Appraiser..."
-
-    # Disable compattelrunner.exe launched by scheduled tasks
-    'Microsoft Compatibility Appraiser',
-    'ProgramDataUpdater' | ForEach-Object {
-        Get-ScheduledTask -TaskName $_ -TaskPath '\Microsoft\Windows\Application Experience\' |
-        Disable-ScheduledTask | Out-Null
-    }
-
-    del C:\ProgramData\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl -ErrorAction SilentlyContinue
-
-    # Disable the Autologger session at the next computer restart
-    Set-AutologgerConfig -Name 'AutoLogger-Diagtrack-Listener' -Start 0
-}
-
-##########
-#endregion BlackDragonBE Tweaks
-##########
-
-##########
-#region GPD Win Specific Tweaks
-##########
-
-# Disable Connected Standby (CSEnabled)
-Function DisableConnectedStandby {
-    Write-Host "Disabling Connected Standby..."
-    Set-ItemProperty -Path "HKLM:\SYSTEM\\CurrentControlSet\Control\Power" -Name "CSEnabled" -Type DWord -Value 0
-}
-
-# Disable hibernation/sleep
-Function DisableHibernation {
-    Write-Host "Disabling hibernation..."
-    Start-Process 'powercfg.exe' -Verb runAs -ArgumentList '/h off'
-}
-
-# Increase Desktop Icon Size
-Function EnableBigDesktopIcons {
-    Set-ItemProperty -path HKCU:\Software\Microsoft\Windows\Shell\Bags\1\Desktop -name IconSize -value 100
-}
-
-# Disables several unnecessary components
-Function RemoveUnneededComponents {
-    $components = @(
-    'Printing-PrintToPDFServices-Features',
-    'Printing-XPSServices-Features',
-    'Xps-Foundation-Xps-Viewer',
-    'WorkFolders-Client',
-    'MediaPlayback',
-    'SMB1Protocol',
-    'WCF-Services45',
-    'MSRDC-Infrastructure',
-    'Internet-Explorer-Optional-amd64'
-    )
-
-    foreach ($component in $components) {
-        Write-Host "Removing component: $component"
-        disable-windowsoptionalfeature -online -featureName $component -NoRestart 
-    }
-}
-
-# Extra strict service disabling to squeeze out the most RAM & CPU out of the Win
-Function DisableGPDWinServices {
-	Write-Host "Disabling extra services (GPD Win)..."
-
-    $services = @(
-        "Spooler"                                   # Print Spooler
-		"TabletInputService" 						# Touch Keyboard & Handwriting Panel Service: fixes RetroArch crashes
-    )
-
-    foreach ($service in $services) {
-        if (Get-Service $service -ErrorAction SilentlyContinue)
-        {
-            Write-Host "Stopping and disabling $service"
-            Stop-Service -Name $service
-            Get-Service -Name $service | Set-Service -StartupType Disabled
-        } else {
-            Write-Host "Skipping $service (does not exist)"
-        }
-    }
-}
-
-##########
-#endregion GPD Win Specific Tweaks
-##########
-
-
-##########
 #region Privacy Tweaks
 ##########
 
@@ -3125,6 +2906,216 @@ Function UnpinTaskbarIcons {
 
 ##########
 #endregion Unpinning
+##########
+
+
+
+##########
+#region BlackDragonBE Tweaks
+##########
+
+Function DisableExtraServices {
+	Write-Host "Disabling extra services (BlackDragonBE)..."
+
+    $services = @(
+        "diagnosticshub.standardcollector.service"	# Microsoft (R) Diagnostics Hub Standard Collector Service
+        "MapsBroker"								# Downloaded Maps Manager
+        "NetTcpPortSharing"                     	# Net.Tcp Port Sharing Service
+        "TrkWks"                                   	# Distributed Link Tracking Client
+        "WbioSrvc"                               	# Windows Biometric Service
+		"WMPNetworkSvc" 							# Windows Media Player Network Sharing Service
+        "AppVClient"
+        "RemoteRegistry"
+        "CDPSvc"
+        "shpamsvc"
+        "SCardSvr"
+        "UevAgentService"
+        "PeerDistSvc"
+        "HvHost"
+        "vmickvpexchange"
+        "vmicguestinterface"
+        "vmicshutdown"
+        "vmicheartbeat"
+        "vmicvmsession"
+        "vmicrdv"
+        "vmictimesync"
+        "vmicvss"
+        "irmon"
+        "SharedAccess"
+        "SmsRouter"
+        "CscService"
+        "SEMgrSvc"
+        "PhoneSvc"
+        "RpcLocator"
+        "RetailDemo"
+        "SensorDataService"
+        "SensrSvc"
+        "SensorService"
+        "ScDeviceEnum"
+        "SCPolicySvc"
+        "SNMPTRAP"
+        "WFDSConSvc"
+        "FrameServer"
+        "wisvc"
+        "icssvc"
+        "WwanSvc"
+    )
+
+    foreach ($service in $services) {
+        if (Get-Service $service -ErrorAction SilentlyContinue)
+        {
+            Write-Host "Stopping and disabling $service"
+            Stop-Service -Name $service
+            Get-Service -Name $service | Set-Service -StartupType Disabled
+        } else {
+            Write-Host "Skipping $service (does not exist)"
+        }
+    }
+}
+
+# Download ninite and install the selected apps
+Function DoNiniteInstall {
+    Write-Host "Downloading Ninite ..."
+    
+    $niniteapps = @()
+    $ofs = '-'
+    
+    Get-Content .\NiniteApps.txt -ErrorAction Stop | ForEach-Object {
+        if(-not $_.ToString().StartsWith('#'))
+        {
+            #Write-Output $_
+            $niniteapps += $_
+        }
+    }
+
+    $niniteurl = "https://ninite.com/" + $niniteapps + "/ninite.exe"
+    $output = "C:\Ninite.exe"
+    
+    Invoke-WebRequest $niniteurl -OutFile $output
+    & $output
+
+    Write-Host
+    Read-Host "Press ENTER when all applications have been installed by Ninite"
+}
+
+# Delete Temp Files
+Function DeleteTempFiles {
+    Write-Host "Cleaning up temporary files..."
+    $tempfolders = @("C:\Windows\Temp\*", "C:\Windows\Prefetch\*", "C:\Documents and Settings\*\Local Settings\temp\*", "C:\Users\*\Appdata\Local\Temp\*")
+    Remove-Item $tempfolders -force -recurse 2>&1 | Out-Null
+}
+
+# Clean WinSXS folder (WARNING: this takes a while!)
+Function CleanWinSXS {
+    Write-Host "Cleaning WinSXS folder, this may take a while, please wait..."
+    Dism.exe /online /Cleanup-Image /StartComponentCleanup
+}
+
+# Download O&O Shutup10
+Function DownloadShutup10 {
+    Write-Host "Downloading Shutup10 & putting it on C drive..."
+    $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
+    $output = "C:\Shutup10.exe"
+    Invoke-WebRequest $url -OutFile $output 
+}
+
+# Remove startup delay (use with SSD)
+Function DisableStartupDelay {
+    Write-Host "Removing startup delay..."
+    New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer' -Name Serialize -Force | Out-Null
+    New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize' -Name StartupDelayInMSec  -PropertyType DWORD -Value 0 -Force | Out-Null
+}
+
+# Stop and disable Windows Search Service
+Function DisableWindowsSearch {
+	Write-Host "Stopping and disabling Windows Search Service..."
+	Stop-Service "WSearch" -WarningAction SilentlyContinue
+	Set-Service "WSearch" -StartupType Disabled
+}
+
+# Enable and start Windows Search Service
+Function EnableWindowsSearch {
+	Write-Host "Enabling and starting Windows Search Service..."
+	Set-Service "WSearch" -StartupType Automatic
+	Start-Service "WSearch" -WarningAction SilentlyContinue
+}
+
+# Stop and disable Microsoft Compatibility Appraiser
+Function DisableCompatibilityAppraiser {
+	Write-Host "Stopping and disabling Microsoft Compatibility Appraiser..."
+
+    # Disable compattelrunner.exe launched by scheduled tasks
+    'Microsoft Compatibility Appraiser',
+    'ProgramDataUpdater' | ForEach-Object {
+        Get-ScheduledTask -TaskName $_ -TaskPath '\Microsoft\Windows\Application Experience\' |
+        Disable-ScheduledTask | Out-Null
+    }
+
+    del C:\ProgramData\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl -ErrorAction SilentlyContinue
+
+    # Disable the Autologger session at the next computer restart
+    Set-AutologgerConfig -Name 'AutoLogger-Diagtrack-Listener' -Start 0
+}
+
+##########
+#endregion BlackDragonBE Tweaks
+##########
+
+
+
+##########
+#region GPD Win Specific Tweaks
+##########
+
+# Disable Connected Standby (CSEnabled)
+Function DisableConnectedStandby {
+    Write-Host "Disabling Connected Standby..."
+    Set-ItemProperty -Path "HKLM:\SYSTEM\\CurrentControlSet\Control\Power" -Name "CSEnabled" -Type DWord -Value 0
+}
+
+# Increase Desktop Icon Size
+Function EnableBigDesktopIcons {
+    Set-ItemProperty -path HKCU:\Software\Microsoft\Windows\Shell\Bags\1\Desktop -name IconSize -value 100
+}
+
+# Disables several unnecessary components
+Function RemoveUnneededComponents {
+    $components = @(
+    'MediaPlayback',
+    'WCF-Services45',
+    'MSRDC-Infrastructure',
+    'Internet-Explorer-Optional-amd64'
+    )
+
+    foreach ($component in $components) {
+        Write-Host "Removing component: $component"
+        disable-windowsoptionalfeature -online -featureName $component -NoRestart 
+    }
+}
+
+# Extra strict service disabling to squeeze out the most RAM & CPU out of the Win
+Function DisableGPDWinServices {
+	Write-Host "Disabling extra services (GPD Win)..."
+
+    $services = @(
+        "Spooler"                                   # Print Spooler
+		"TabletInputService" 						# Touch Keyboard & Handwriting Panel Service: fixes RetroArch crashes
+    )
+
+    foreach ($service in $services) {
+        if (Get-Service $service -ErrorAction SilentlyContinue)
+        {
+            Write-Host "Stopping and disabling $service"
+            Stop-Service -Name $service
+            Get-Service -Name $service | Set-Service -StartupType Disabled
+        } else {
+            Write-Host "Skipping $service (does not exist)"
+        }
+    }
+}
+
+##########
+#endregion GPD Win Specific Tweaks
 ##########
 
 

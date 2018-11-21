@@ -51,5 +51,22 @@ While ($i -lt $args.Length) {
 	$i++
 }
 
+# Confirmation
+Write-Host
+Write-Host
+Write-Host "WIN 10 Optimization Script For Windows 10 by BlackDragonBE"
+Write-Host "(Adapted version of https://github.com/Disassembler0/Win10-Initial-Setup-Script by Disassembler <disassembler@dasm.cz>)"
+Write-Host "--------------------------------------------"
+Write-Host "Make sure you've checked which tweaks are turned on before running this. Edit by placing # before anything you don't want to run."
+Write-Host
+$confirmation = Read-Host "If you're sure you want to run this, press y and ENTER. If not, just press ENTER to exit."
+
+if ($confirmation -ne 'y') {
+    Write-Host
+    Write-Host "Cancelled script execution."
+    exit
+}
+
+
 # Call the desired tweak functions
 $tweaks | ForEach-Object { Invoke-Expression $_ }
