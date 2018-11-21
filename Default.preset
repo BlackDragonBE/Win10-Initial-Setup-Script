@@ -1,8 +1,10 @@
 ##########
-# Win 10 / Server 2016 / Server 2019 Initial Setup Script - Default preset
-# Author: Disassembler <disassembler@dasm.cz>
-# Version: v3.3, 2018-10-22
-# Source: https://github.com/Disassembler0/Win10-Initial-Setup-Script
+# Win 10 / Server 2016 / Server 2019 / GPD Win Initial Setup Script - BlackDragonBE default preset
+# Author: BlackDragonBE
+# Based on script by: Disassembler <disassembler@dasm.cz>
+# Version: v2.5 2018-11-21
+# Based on: v3.3
+# Source: https://github.com/BlackDragonBE/Win10-Initial-Setup-Script
 ##########
 
 ### Require administrator privileges ###
@@ -180,6 +182,23 @@ RemoveFaxPrinter                # AddFaxPrinter
 ### Unpinning ###
 # UnpinStartMenuTiles
 # UnpinTaskbarIcons
+
+### BlackDragonBE Tweaks ###
+DisableExtraServices
+DoNiniteInstall # Note: check the list of apps to install in the included NiniteApps.txt file
+DeleteTempFiles
+CleanWinSXS # Takes a while but frees up a lot of space
+DownloadShutup10
+RemoveUnneededComponents
+# DisableWindowsSearch         # EnableWindowsSearch
+DisableCompatibilityAppraiser
+
+### GPD Win Specific Tweaks ###
+# DisableConnectedStandby
+# DisableHibernation
+# DisableUpdateDriver #Added here as well as it's so important for the WIN
+# EnableBigDesktopIcons
+# DisableGPDWinServices
 
 ### Auxiliary Functions ###
 WaitForKey
