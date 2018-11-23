@@ -2980,7 +2980,7 @@ Function DoNiniteInstall {
     $niniteapps = @()
     $ofs = '-'
     
-    Get-Content .\NiniteApps.txt -ErrorAction Stop | ForEach-Object {
+    Get-Content $PSScriptRoot\NiniteApps.txt -ErrorAction Stop | ForEach-Object {
         if(-not $_.ToString().StartsWith('#'))
         {
             #Write-Output $_
