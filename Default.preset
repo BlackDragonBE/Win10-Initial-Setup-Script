@@ -187,11 +187,11 @@ UnpinTaskbarIcons
 DisableExtraServices
 DoNiniteInstall # Note: check the list of apps to install in the included NiniteApps.txt file
 DeleteTempFiles
-# CleanWinSXS # Takes a while but frees up a lot of space
 DownloadShutup10
 RemoveUnneededComponents
 # DisableWindowsSearch         # EnableWindowsSearch # Note: Disabling breaks start menu search
 DisableCompatibilityAppraiser
+# CleanWinSXS # Takes a while but frees up a lot of space
 
 ### GPD Win Specific Tweaks ###
 # DisableConnectedStandby

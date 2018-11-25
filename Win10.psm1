@@ -3007,7 +3007,7 @@ Function DeleteTempFiles {
 
 # Clean WinSXS folder (WARNING: this takes a while!)
 Function CleanWinSXS {
-    Write-Host "Cleaning WinSXS folder, this may take a while, please wait..."
+    Write-Host "Cleaning WinSXS folder, this may take a long time. You can stop the cleaning mid-progress by pressing CTRL+C."
     Dism.exe /online /Cleanup-Image /StartComponentCleanup
 }
 
